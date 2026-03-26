@@ -15,7 +15,7 @@ A simple and responsive **Study Planner web app** built using HTML, CSS, and Jav
 
 ## 🚀 Live Demo
 
-(Add your link here)
+https://alibajwa19.github.io/student-study-planner/
 
 ## 🛠️ Tech Used
 
