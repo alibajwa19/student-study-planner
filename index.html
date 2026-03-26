@@ -1,0 +1,311 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Pro Study Planner</title>
+
+<style>
+body {
+    margin: 0;
+    font-family: 'Segoe UI', sans-serif;
+    display: flex;
+    background: linear-gradient(135deg, #667eea, #764ba2);
+    color: #111;
+}
+
+/* DARK MODE */
+body.dark {
+    background: #0f172a;
+    color: white;
+}
+
+/* Sidebar */
+.sidebar {
+    width: 220px;
+    background: #1e293b;
+    color: white;
+    height: 100vh;
+    padding: 20px;
+}
+
+.sidebar a {
+    display: block;
+    color: #cbd5e1;
+    margin: 10px 0;
+    padding: 10px;
+    border-radius: 8px;
+    text-decoration: none;
+}
+
+.sidebar a:hover {
+    background: #334155;
+}
+
+/* Main */
+.main {
+    flex: 1;
+    padding: 20px;
+}
+
+/* Topbar */
+.topbar {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 20px;
+}
+
+/* Cards */
+.cards {
+    display: flex;
+    gap: 15px;
+    margin-bottom: 20px;
+}
+
+.card {
+    background: white;
+    flex: 1;
+    padding: 20px;
+    border-radius: 10px;
+    text-align: center;
+}
+
+body.dark .card {
+    background: #1e293b;
+}
+
+/* Planner */
+.planner {
+    background: white;
+    padding: 20px;
+    border-radius: 15px;
+}
+
+body.dark .planner {
+    background: #1e293b;
+}
+
+input, select {
+    padding: 10px;
+    margin: 5px;
+    border-radius: 5px;
+    border: 1px solid #ccc;
+}
+
+button {
+    padding: 10px;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    background: #2563eb;
+    color: white;
+    transition: 0.2s;
+}
+
+button:hover {
+    transform: scale(1.05);
+}
+
+/* Task */
+li {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: #eef2ff;
+    padding: 12px;
+    border-radius: 10px;
+    margin-top: 10px;
+}
+
+.completed {
+    text-decoration: line-through;
+    opacity: 0.6;
+}
+
+.overdue {
+    background: #fecaca;
+}
+
+/* Progress */
+.progress {
+    height: 10px;
+    background: #ddd;
+    border-radius: 10px;
+    margin: 10px 0;
+}
+
+.progress-bar {
+    height: 10px;
+    background: #22c55e;
+    border-radius: 10px;
+    width: 0%;
+}
+
+/* Mobile */
+@media (max-width: 768px) {
+    .cards {
+        flex-direction: column;
+    }
+    .sidebar {
+        display: none;
+    }
+}
+</style>
+</head>
+
+<body>
+
+<div class="sidebar">
+    <h2>📚 Planner</h2>
+    <a href="#">Dashboard</a>
+    <a href="#">Tasks</a>
+</div>
+
+<div class="main">
+
+<div class="topbar">
+    <div id="time"></div>
+    <div>
+        Welcome 👋 
+        <button onclick="toggleDark()">🌙</button>
+    </div>
+</div>
+
+<div class="cards">
+    <div class="card">Tasks <h2 id="total">0</h2></div>
+    <div class="card">Completed <h2 id="done">0</h2></div>
+    <div class="card">Pending <h2 id="pending">0</h2></div>
+</div>
+
+<div class="progress">
+    <div class="progress-bar" id="progressBar"></div>
+</div>
+
+<div class="planner">
+
+<h2>Study Planner</h2>
+
+<input type="text" id="taskInput" placeholder="Task">
+<input type="date" id="dateInput">
+<button onclick="addTask()">Add</button>
+
+<br>
+
+<input type="text" id="search" placeholder="Search..." onkeyup="renderTasks()">
+
+<select id="filter" onchange="renderTasks()">
+    <option value="all">All</option>
+    <option value="completed">Completed</option>
+    <option value="pending">Pending</option>
+</select>
+
+<ul id="list"></ul>
+
+</div>
+</div>
+
+<script>
+let tasks = JSON.parse(localStorage.getItem("tasks")) || [];
+
+// Clock
+setInterval(()=>{
+    document.getElementById("time").innerText = new Date().toLocaleTimeString();
+},1000);
+
+// Add Task
+function addTask() {
+    let text = taskInput.value;
+    let date = dateInput.value;
+
+    if (!text || !date) return alert("Fill all fields!");
+
+    tasks.push({text, date, completed:false});
+    save();
+}
+
+// Save
+function save() {
+    localStorage.setItem("tasks", JSON.stringify(tasks));
+    renderTasks();
+}
+
+// Render
+function renderTasks() {
+    let list = document.getElementById("list");
+    list.innerHTML = "";
+
+    let filter = document.getElementById("filter").value;
+    let search = document.getElementById("search").value.toLowerCase();
+
+    let today = new Date().toISOString().split("T")[0];
+
+    tasks.forEach((t,i)=>{
+
+        if (filter==="completed" && !t.completed) return;
+        if (filter==="pending" && t.completed) return;
+        if (!t.text.toLowerCase().includes(search)) return;
+
+        let li = document.createElement("li");
+
+        if (t.completed) li.classList.add("completed");
+        if (t.date < today) li.classList.add("overdue");
+
+        li.innerHTML = `
+            ${t.text} (${t.date})
+            <div>
+                <button onclick="toggle(${i})">✔</button>
+                <button onclick="edit(${i})">✏️</button>
+                <button onclick="del(${i})">🗑️</button>
+            </div>
+        `;
+
+        list.appendChild(li);
+    });
+
+    updateStats();
+}
+
+// Toggle Complete
+function toggle(i){
+    tasks[i].completed = !tasks[i].completed;
+    save();
+}
+
+// Delete
+function del(i){
+    tasks.splice(i,1);
+    save();
+}
+
+// Edit
+function edit(i){
+    let newTask = prompt("Edit task:", tasks[i].text);
+    if(newTask) {
+        tasks[i].text = newTask;
+        save();
+    }
+}
+
+// Stats + Progress
+function updateStats(){
+    let total = tasks.length;
+    let done = tasks.filter(t=>t.completed).length;
+
+    totalEl = document.getElementById("total").innerText = total;
+    doneEl = document.getElementById("done").innerText = done;
+    pendingEl = document.getElementById("pending").innerText = total-done;
+
+    let percent = total ? (done/total)*100 : 0;
+    document.getElementById("progressBar").style.width = percent + "%";
+}
+
+// Dark Mode
+function toggleDark(){
+    document.body.classList.toggle("dark");
+}
+
+// Init
+renderTasks();
+</script>
+
+</body>
+</html>
